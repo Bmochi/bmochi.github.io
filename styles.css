@@ -2,26 +2,26 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:           #0C1B24;
-  --surface:      #122130;
-  --header-bg:    #0E1E2A;
-  --date-hd-bg:   #183547;
-  --cell-inactive:#111E28;
-  --border:       #1E3347;
-  --text:         #DFF0F8;
-  --text-muted:   #6A96AC;
-  --accent:       #2878B8;
-  --accent-hover: #1F66A0;
+  --bg:           #1C0008;
+  --surface:      #280010;
+  --header-bg:    #1C0008;
+  --date-hd-bg:   #380014;
+  --cell-inactive:#180006;
+  --border:       #4A0018;
+  --text:         #FFE8EE;
+  --text-muted:   #A06880;
+  --accent:       #CC1230;
+  --accent-hover: #A80E28;
 
-  /* 8-colour theme palette */
-  --t0: #C85E18;
-  --t1: #3E8CB0;
-  --t2: #A0584A;
-  --t3: #4A9E6A;
-  --t4: #7B5EA8;
-  --t5: #B84878;
-  --t6: #2E9AA0;
-  --t7: #9A8030;
+  /* 8-colour theme palette — Sally brand reds */
+  --t0: #CC1230;
+  --t1: #7B0022;
+  --t2: #E04865;
+  --t3: #A81230;
+  --t4: #590015;
+  --t5: #D44060;
+  --t6: #8C1530;
+  --t7: #F06885;
 
   /* Sub-channel tag colours */
   --sub-email:   #FF6B6B;

@@ -17,8 +17,14 @@
 const STORAGE_KEY = 'gtm_stories_v3';
 
 const THEME_PALETTE = [
-  '#C85E18', '#3E8CB0', '#A0584A', '#4A9E6A',
-  '#7B5EA8', '#B84878', '#2E9AA0', '#9A8030',
+  '#CC1230', // Sally primary red
+  '#7B0022', // deep burgundy
+  '#E04865', // rose
+  '#A81230', // crimson
+  '#590015', // dark wine
+  '#D44060', // hot pink-red
+  '#8C1530', // medium wine
+  '#F06885', // light coral-rose
 ];
 
 /* ── State ─────────────────────────────────────────────────── */
