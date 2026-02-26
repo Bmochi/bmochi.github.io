@@ -40,6 +40,34 @@
   --label-col-w: 200px;
 }
 
+/* ── Light mode (Sally cream + light pink) ─────────────────── */
+[data-theme="light"] {
+  --bg:           #F5EDE0;
+  --surface:      #FADADD;
+  --header-bg:    #EFE3D6;
+  --date-hd-bg:   #F2C8CE;
+  --cell-inactive:#FAF4EE;
+  --border:       #DDB8C0;
+  --text:         #2A0008;
+  --text-muted:   #8A4055;
+  --shadow:       0 8px 32px rgba(0,0,0,.15);
+}
+
+/* Active Gantt bars always use white text — bars are dark regardless of mode */
+.gantt-cell.active { color: #fff; }
+
+/* Light mode: replace hardcoded rgba-white borders with themed borders */
+[data-theme="light"] .story-label-cell {
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .gantt-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .modal-overlay {
+  background: rgba(0,0,0,.45);
+}
+
 html, body {
   height: 100%;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
