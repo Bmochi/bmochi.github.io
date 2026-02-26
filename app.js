@@ -187,9 +187,18 @@ function renderGantt() {
   /* ── Story rows ── */
   const tbody = table.createTBody();
 
-  stories.forEach(story => {
-    const color = state.themeColorMap[story.theme] || THEME_PALETTE[0];
-    const row   = tbody.insertRow();
+  // Group entries sharing the same theme + story + channel + subChannel into one row
+  const groups = new Map();
+  stories.forEach(s => {
+    const key = `${s.theme}\x00${s.story}\x00${s.channel}\x00${s.subChannel}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  });
+
+  groups.forEach(entries => {
+    const rep   = entries[0]; // representative entry for label display
+    const color = state.themeColorMap[rep.theme] || THEME_PALETTE[0];
+    const tr    = tbody.insertRow();
 
     /* Sticky label cell */
     const labelTd = document.createElement('td');
@@ -198,88 +207,91 @@ function renderGantt() {
 
     const themeLbl = document.createElement('div');
     themeLbl.className = 'label-theme';
-    themeLbl.textContent = story.theme;
+    themeLbl.textContent = rep.theme;
 
     const storyLbl = document.createElement('div');
     storyLbl.className = 'label-story';
-    storyLbl.textContent = story.story;
+    storyLbl.textContent = rep.story;
 
-    const metaRow = document.createElement('div');
-    metaRow.className = 'label-meta';
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'label-meta';
 
-    if (story.subChannel) {
+    if (rep.subChannel) {
       const sub = document.createElement('span');
-      sub.className = `sub-tag sub-${story.subChannel.replace(/\s+/g, '-')}`;
-      sub.textContent = story.subChannel;
-      metaRow.appendChild(sub);
+      sub.className = `sub-tag sub-${rep.subChannel.replace(/\s+/g, '-')}`;
+      sub.textContent = rep.subChannel;
+      metaDiv.appendChild(sub);
     }
 
-    if (story.promo && story.promoMsg) {
+    if (rep.promo && rep.promoMsg) {
       const badge = document.createElement('span');
       badge.className = 'promo-badge';
-      badge.textContent = story.promoMsg;
-      metaRow.appendChild(badge);
+      badge.textContent = rep.promoMsg;
+      metaDiv.appendChild(badge);
     }
 
     const catsDiv = document.createElement('div');
     catsDiv.className = 'label-cats';
-    catsDiv.textContent = story.categories.join(', ');
+    catsDiv.textContent = rep.categories.join(', ');
 
     labelTd.appendChild(themeLbl);
     labelTd.appendChild(storyLbl);
-    labelTd.appendChild(metaRow);
-    if (story.categories.length) labelTd.appendChild(catsDiv);
-    labelTd.addEventListener('click', () => openEditModal(story.id));
-    row.appendChild(labelTd);
+    labelTd.appendChild(metaDiv);
+    if (rep.categories.length) labelTd.appendChild(catsDiv);
+    labelTd.addEventListener('click', () => openEditModal(rep.id));
+    tr.appendChild(labelTd);
 
-    /* Date cells */
+    /* Date cells — any entry in the group can activate a column */
     cols.forEach(col => {
-      const td = row.insertCell();
-      if (storyActiveForCol(story, col)) {
+      const td          = tr.insertCell();
+      const activeEntry = entries.find(s => storyActiveForCol(s, col));
+      if (activeEntry) {
         td.className = 'gantt-cell active';
         td.style.backgroundColor = color;
-        td.addEventListener('click', () => openEditModal(story.id));
+        td.addEventListener('click', () => openEditModal(activeEntry.id));
 
         const card = document.createElement('div');
         card.className = 'cell-card';
 
         const t = document.createElement('div');
         t.className = 'cell-theme';
-        t.textContent = story.theme;
+        t.textContent = activeEntry.theme;
 
         const s = document.createElement('div');
         s.className = 'cell-story';
-        s.textContent = story.story;
+        s.textContent = activeEntry.story;
 
         card.appendChild(t);
         card.appendChild(s);
 
-        if (story.channel) {
-          const row = document.createElement('div');
-          row.className = 'cell-row';
+        if (activeEntry.channel) {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'cell-row';
           const lbl = document.createElement('span');
           lbl.className = 'cell-label';
           lbl.textContent = 'Channel:';
           const val = document.createElement('span');
           val.className = 'cell-value';
-          val.textContent = story.subChannel ? `${story.channel}, ${story.subChannel}` : story.channel;
-          row.appendChild(lbl);
-          row.appendChild(val);
-          card.appendChild(row);
+          val.textContent = activeEntry.subChannel
+            ? `${activeEntry.channel}, ${activeEntry.subChannel}`
+            : activeEntry.channel;
+          rowEl.appendChild(lbl);
+          rowEl.appendChild(val);
+          card.appendChild(rowEl);
         }
 
-        if (story.categories.length) {
-          const row = document.createElement('div');
-          row.className = 'cell-row';
+        if (activeEntry.categories.length) {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'cell-row';
           const lbl = document.createElement('span');
           lbl.className = 'cell-label';
           lbl.textContent = 'Category:';
           const val = document.createElement('span');
           val.className = 'cell-value cell-value--italic';
-          val.textContent = story.categories.join(', ');
-          row.appendChild(lbl);
-          row.appendChild(val);
-          card.appendChild(row);
+          val.textContent = activeEntry.categories.join(', ');
+          rowEl.appendChild(lbl);
+          rowEl.appendChild(val);
+          card.appendChild(rowEl);
         }
 
         td.appendChild(card);
