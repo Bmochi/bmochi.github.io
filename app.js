@@ -1,302 +1,414 @@
-/* ── GTM Plan Calendar — app.js ─────────────────────────── */
+/* ── GTM Plan Calendar — app.js ─────────────────────────────
+   Data model per story:
+   {
+     id:         string,
+     theme:      string,       // grouping label, e.g. "Summer Launch"
+     story:      string,       // campaign story name
+     channels:   string[],     // e.g. ["Paid", "Organic Social", "CRM"]
+     categories: string[],     // product categories you sell
+     startDate:  "YYYY-MM-DD",
+     endDate:    "YYYY-MM-DD",
+   }
+─────────────────────────────────────────────────────────── */
 
-const STORAGE_KEY = 'gtm_events_v1';
+const STORAGE_KEY = 'gtm_stories_v1';
 
-const CATEGORY_LABELS = {
-  launch:      'Product Launch',
-  marketing:   'Marketing',
-  sales:       'Sales',
-  content:     'Content',
-  pr:          'PR & Comms',
-  partnership: 'Partnership',
-  milestone:   'Milestone',
-};
+const ALL_CHANNELS = [
+  'Paid', 'Organic Social', 'CRM', 'Retail', 'PR', 'Influencer', 'Events',
+];
+
+// Eight distinct theme colours (cycled in insertion order)
+const THEME_PALETTE = [
+  '#C85E18', // burnt orange
+  '#3E8CB0', // muted blue
+  '#B86A50', // salmon
+  '#4A9E6A', // forest green
+  '#7B5EA8', // purple
+  '#B84878', // rose
+  '#2E9AA0', // teal
+  '#9A8030', // gold
+];
 
 /* ── State ─────────────────────────────────────────────────── */
 let state = {
-  currentYear:  new Date().getFullYear(),
-  currentMonth: new Date().getMonth(), // 0-indexed
-  events:       loadEvents(),
-  activeFilters: new Set(['all', 'launch', 'marketing', 'sales', 'content', 'pr', 'partnership', 'milestone']),
+  stories:       loadStories(),
+  viewStart:     null,   // YYYY-MM-DD
+  viewEnd:       null,   // YYYY-MM-DD
+  viewUnit:      'week', // 'week' | 'day'
+  channelFilter: 'all',
+  themeColorMap: {},     // theme name → hex color
   editingId:     null,
-  selectedDate:  null,
 };
 
+// Initialise default view window: today → today + 10 weeks
+(function initView() {
+  const today = new Date();
+  state.viewStart = isoDate(getMondayOf(today));
+  const end = addDays(getMondayOf(today), 69); // ~10 weeks
+  state.viewEnd = isoDate(end);
+})();
+
 /* ── Persistence ───────────────────────────────────────────── */
-function loadEvents() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || seedEvents();
-  } catch {
-    return seedEvents();
-  }
+function loadStories() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || seedStories(); }
+  catch { return seedStories(); }
+}
+function saveStories() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.stories));
 }
 
-function saveEvents() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
-}
-
-/* Seed with demo GTM events so the calendar isn't empty */
-function seedEvents() {
+function seedStories() {
   const y = new Date().getFullYear();
   const m = String(new Date().getMonth() + 1).padStart(2, '0');
+  const p = `${y}-${m}`;
   return [
-    { id: uid(), title: 'Q1 Strategy Kickoff',      category: 'milestone',   start: `${y}-${m}-01`, end: `${y}-${m}-01`, owner: 'Leadership',      notes: 'Set priorities and OKRs for the quarter.' },
-    { id: uid(), title: 'Blog Post: Product Intro',  category: 'content',     start: `${y}-${m}-05`, end: `${y}-${m}-05`, owner: 'Content Team',    notes: 'SEO-optimised intro article.' },
-    { id: uid(), title: 'Paid Social Campaign',      category: 'marketing',   start: `${y}-${m}-08`, end: `${y}-${m}-22`, owner: 'Paid Media',      notes: 'Facebook & Instagram retargeting.' },
-    { id: uid(), title: 'Sales Deck Update',         category: 'sales',       start: `${y}-${m}-10`, end: `${y}-${m}-11`, owner: 'Sales Team',      notes: 'Refresh slide deck with new case studies.' },
-    { id: uid(), title: 'Press Release',             category: 'pr',          start: `${y}-${m}-14`, end: `${y}-${m}-14`, owner: 'PR Agency',       notes: 'Coordinate with TechCrunch.' },
-    { id: uid(), title: 'Partner Webinar',           category: 'partnership', start: `${y}-${m}-18`, end: `${y}-${m}-18`, owner: 'Partnerships',    notes: 'Co-host with Strategic Partner Inc.' },
-    { id: uid(), title: 'v2.0 Product Launch',       category: 'launch',      start: `${y}-${m}-21`, end: `${y}-${m}-21`, owner: 'Product + Mktg', notes: 'Full launch across all channels.' },
-    { id: uid(), title: 'Email Nurture Sequence',    category: 'marketing',   start: `${y}-${m}-21`, end: `${y}-${m}-28`, owner: 'CRM Team',        notes: '5-email drip campaign post-launch.' },
-    { id: uid(), title: 'Monthly Review',            category: 'milestone',   start: `${y}-${m}-28`, end: `${y}-${m}-28`, owner: 'All Leads',       notes: 'Review metrics and adjust plan.' },
+    { id: uid(), theme: 'Theme 1', story: 'Story 1', channels: ['Paid', 'Organic Social', 'CRM'], categories: ['Hair Color', 'Nails'], startDate: `${p}-01`, endDate: `${p}-18` },
+    { id: uid(), theme: 'Theme 1', story: 'Story 2', channels: ['Organic Social', 'CRM'],         categories: ['Hair Care'],            startDate: `${p}-01`, endDate: `${p}-10` },
+    { id: uid(), theme: 'Theme 2', story: 'Story 1', channels: [],                                categories: [],                       startDate: `${p}-05`, endDate: `${p}-25` },
+    { id: uid(), theme: 'Theme 3', story: 'Story 1', channels: ['Paid', 'CRM'],                   categories: ['Clippers / Trimmers', 'Styling Products'], startDate: `${p}-01`, endDate: `${p}-28` },
+    { id: uid(), theme: 'Theme 3', story: 'Story 2', channels: [],                                categories: [],                       startDate: `${p}-15`, endDate: `${p}-28` },
   ];
 }
 
-/* ── Utilities ─────────────────────────────────────────────── */
-function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
+/* ── Date utilities ────────────────────────────────────────── */
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
-function isoDate(date) {
-  return date.toISOString().slice(0, 10);
-}
+function isoDate(d) { return d.toISOString().slice(0, 10); }
 
 function parseDate(str) {
-  // Parse YYYY-MM-DD without timezone shift
   const [y, m, d] = str.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-function formatDateShort(str) {
-  const d = parseDate(str);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
 }
 
-function formatDateFull(str) {
-  const d = parseDate(str);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+function getMondayOf(d) {
+  const day = d.getDay(); // 0=Sun
+  const diff = (day === 0) ? -6 : 1 - day;
+  return addDays(d, diff);
 }
 
-function eventsForDate(dateStr) {
-  return state.events.filter(ev => {
-    const start = ev.start;
-    const end   = ev.end || ev.start;
-    return dateStr >= start && dateStr <= end;
+function formatColHeader(dateStr, unit) {
+  const d = parseDate(dateStr);
+  if (unit === 'week') {
+    return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+  }
+  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+}
+
+function formatDateRange(start, end) {
+  const fmt = s => parseDate(s).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+/* Build the array of column start-dates */
+function buildColumns() {
+  const cols = [];
+  const end = parseDate(state.viewEnd);
+  let cur = parseDate(state.viewStart);
+  if (state.viewUnit === 'week') cur = getMondayOf(cur);
+
+  while (cur <= end) {
+    cols.push(isoDate(cur));
+    cur = addDays(cur, state.viewUnit === 'week' ? 7 : 1);
+  }
+  return cols;
+}
+
+/* Is a story active during a given column? */
+function storyActiveForCol(story, colStart) {
+  const colEnd = isoDate(addDays(parseDate(colStart),
+    state.viewUnit === 'week' ? 6 : 0));
+  return story.startDate <= colEnd && story.endDate >= colStart;
+}
+
+/* ── Theme colour map ──────────────────────────────────────── */
+function rebuildThemeColorMap() {
+  // Keep existing assignments; add new themes in palette order
+  const used = new Set(Object.values(state.themeColorMap));
+  const themes = [...new Set(state.stories.map(s => s.theme))].sort();
+  themes.forEach(t => {
+    if (!state.themeColorMap[t]) {
+      const next = THEME_PALETTE.find(c => !used.has(c)) || THEME_PALETTE[0];
+      state.themeColorMap[t] = next;
+      used.add(next);
+    }
+  });
+  // Remove orphaned themes
+  Object.keys(state.themeColorMap).forEach(t => {
+    if (!themes.includes(t)) delete state.themeColorMap[t];
   });
 }
 
-function visibleEvents() {
-  if (state.activeFilters.has('all') &&
-      state.activeFilters.size === Object.keys(CATEGORY_LABELS).length + 1) {
-    return state.events;
-  }
-  return state.events.filter(ev => state.activeFilters.has(ev.category));
+/* Slightly darken a hex colour for text-on-colour readability */
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* ── DOM Refs ──────────────────────────────────────────────── */
-const $ = id => document.getElementById(id);
+/* ── Gantt Render ──────────────────────────────────────────── */
+function renderGantt() {
+  rebuildThemeColorMap();
 
-const monthLabel    = $('monthLabel');
-const calGrid       = document.querySelector('.calendar-grid');
-const prevBtn       = $('prevMonth');
-const nextBtn       = $('nextMonth');
-const todayBtn      = $('todayBtn');
-const addEventBtn   = $('addEventBtn');
-const modalOverlay  = $('modalOverlay');
-const modalTitle    = $('modalTitle');
-const modalClose    = $('modalClose');
-const cancelBtn     = $('cancelBtn');
-const saveEventBtn  = $('saveEventBtn');
-const deleteEventBtn= $('deleteEventBtn');
-const eventTitle    = $('eventTitle');
-const eventStart    = $('eventStart');
-const eventEnd      = $('eventEnd');
-const eventCategory = $('eventCategory');
-const eventOwner    = $('eventOwner');
-const eventNotes    = $('eventNotes');
-const upcomingList  = $('upcomingList');
-const dayPanelOverlay = $('dayPanelOverlay');
-const dayPanelTitle = $('dayPanelTitle');
-const dayPanelBody  = $('dayPanelBody');
-const dayPanelClose = $('dayPanelClose');
-const dayPanelAddBtn= $('dayPanelAddBtn');
+  const table     = document.getElementById('ganttTable');
+  const emptyMsg  = document.getElementById('ganttEmpty');
+  const cols      = buildColumns();
 
-/* ── Render Calendar ───────────────────────────────────────── */
-function renderCalendar() {
-  const { currentYear: yr, currentMonth: mo } = state;
-
-  monthLabel.textContent = new Date(yr, mo, 1).toLocaleDateString('en-US', {
-    month: 'long', year: 'numeric'
-  });
-
-  // Remove existing day cells (keep headers)
-  const headers = calGrid.querySelectorAll('.day-header');
-  calGrid.innerHTML = '';
-  headers.forEach(h => calGrid.appendChild(h));
-
-  const firstDay  = new Date(yr, mo, 1).getDay();
-  const daysInMo  = new Date(yr, mo + 1, 0).getDate();
-  const daysInPrev= new Date(yr, mo, 0).getDate();
-  const todayStr  = isoDate(new Date());
-  const visible   = new Set(visibleEvents().map(e => e.id));
-
-  // Cells: prev month overflow
-  for (let i = 0; i < firstDay; i++) {
-    const day = daysInPrev - firstDay + 1 + i;
-    const dateStr = isoDate(new Date(yr, mo - 1, day));
-    calGrid.appendChild(buildCell(day, dateStr, true, todayStr, visible));
+  // Filter stories by selected channel
+  let stories = state.stories;
+  if (state.channelFilter !== 'all') {
+    stories = stories.filter(s => s.channels.includes(state.channelFilter));
   }
 
-  // Current month
-  for (let d = 1; d <= daysInMo; d++) {
-    const dateStr = isoDate(new Date(yr, mo, d));
-    calGrid.appendChild(buildCell(d, dateStr, false, todayStr, visible));
-  }
+  // Sort: theme name → story name
+  stories = [...stories].sort((a, b) =>
+    a.theme.localeCompare(b.theme) || a.story.localeCompare(b.story)
+  );
 
-  // Next month overflow
-  const total = firstDay + daysInMo;
-  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let d = 1; d <= remaining; d++) {
-    const dateStr = isoDate(new Date(yr, mo + 1, d));
-    calGrid.appendChild(buildCell(d, dateStr, true, todayStr, visible));
-  }
+  table.innerHTML = '';
 
-  renderUpcoming();
-}
-
-function buildCell(dayNum, dateStr, otherMonth, todayStr, visibleIds) {
-  const cell = document.createElement('div');
-  cell.className = 'day-cell' +
-    (otherMonth ? ' other-month' : '') +
-    (dateStr === todayStr ? ' today' : '');
-  cell.dataset.date = dateStr;
-
-  const num = document.createElement('div');
-  num.className = 'day-num';
-  num.textContent = dayNum;
-  cell.appendChild(num);
-
-  const dayEvents = eventsForDate(dateStr).filter(e => visibleIds.has(e.id));
-  const MAX_CHIPS = 3;
-  dayEvents.slice(0, MAX_CHIPS).forEach(ev => {
-    const chip = document.createElement('div');
-    chip.className = `event-chip cat-${ev.category}`;
-    chip.textContent = ev.title;
-    chip.dataset.id = ev.id;
-    chip.addEventListener('click', e => {
-      e.stopPropagation();
-      openEditModal(ev.id);
-    });
-    cell.appendChild(chip);
-  });
-
-  if (dayEvents.length > MAX_CHIPS) {
-    const more = document.createElement('div');
-    more.className = 'event-more';
-    more.textContent = `+${dayEvents.length - MAX_CHIPS} more`;
-    cell.appendChild(more);
-  }
-
-  cell.addEventListener('click', () => openDayPanel(dateStr));
-  return cell;
-}
-
-/* ── Upcoming Sidebar ──────────────────────────────────────── */
-function renderUpcoming() {
-  const todayStr = isoDate(new Date());
-  const upcoming = state.events
-    .filter(ev => ev.start >= todayStr)
-    .sort((a, b) => a.start.localeCompare(b.start))
-    .slice(0, 6);
-
-  upcomingList.innerHTML = '';
-  if (!upcoming.length) {
-    upcomingList.innerHTML = '<div class="upcoming-empty">No upcoming events</div>';
+  if (stories.length === 0) {
+    emptyMsg.style.display = 'flex';
     return;
   }
-  upcoming.forEach(ev => {
+  emptyMsg.style.display = 'none';
+
+  /* ── Header row ── */
+  const thead = table.createTHead();
+  const hRow  = thead.insertRow();
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.className = 'gantt-th';
+    th.textContent = formatColHeader(col, state.viewUnit);
+    hRow.appendChild(th);
+  });
+
+  /* ── Story rows ── */
+  const tbody = table.createTBody();
+
+  stories.forEach(story => {
+    const color = state.themeColorMap[story.theme] || THEME_PALETTE[0];
+    const row   = tbody.insertRow();
+
+    let passedFirstActive = false;
+
+    cols.forEach(col => {
+      const td = row.insertCell();
+
+      if (storyActiveForCol(story, col)) {
+        td.className = 'gantt-cell active';
+        td.style.backgroundColor = color;
+
+        if (!passedFirstActive) {
+          passedFirstActive = true;
+          td.classList.add('first-active');
+
+          // Build story card
+          const card = document.createElement('div');
+          card.className = 'story-card';
+
+          const themeLbl = document.createElement('div');
+          themeLbl.className = 'story-theme-label';
+          themeLbl.textContent = story.theme;
+
+          const storyLbl = document.createElement('div');
+          storyLbl.className = 'story-name-label';
+          storyLbl.textContent = story.story;
+
+          card.appendChild(themeLbl);
+          card.appendChild(storyLbl);
+
+          if (story.channels.length) {
+            const chRow = document.createElement('div');
+            chRow.className = 'story-channels-row';
+            const prefix = document.createElement('span');
+            prefix.className = 'ch-prefix';
+            prefix.textContent = 'Channel: ';
+            chRow.appendChild(prefix);
+            story.channels.forEach((ch, i) => {
+              const tag = document.createElement('span');
+              tag.className = `ch-tag ch-${ch.replace(/\s+/g, '-')}`;
+              tag.textContent = ch + (i < story.channels.length - 1 ? ',' : '');
+              chRow.appendChild(tag);
+            });
+            card.appendChild(chRow);
+          }
+
+          if (story.categories.length) {
+            const catRow = document.createElement('div');
+            catRow.className = 'story-categories-row';
+            const prefix = document.createElement('span');
+            prefix.className = 'cat-prefix';
+            prefix.textContent = 'Category: ';
+            catRow.appendChild(prefix);
+            catRow.appendChild(document.createTextNode(story.categories.join(', ')));
+            card.appendChild(catRow);
+          }
+
+          td.appendChild(card);
+        }
+
+        td.addEventListener('click', () => openEditModal(story.id));
+      } else {
+        td.className = 'gantt-cell inactive';
+      }
+    });
+  });
+
+  renderLegend();
+}
+
+/* ── Legend ────────────────────────────────────────────────── */
+function renderLegend() {
+  const el = document.getElementById('themeLegend');
+  el.innerHTML = '';
+  const themes = [...new Set(state.stories.map(s => s.theme))].sort();
+  if (!themes.length) {
+    el.innerHTML = '<span style="color:var(--text-muted);font-size:.78rem">No themes yet</span>';
+    return;
+  }
+  themes.forEach(t => {
     const item = document.createElement('div');
-    item.className = 'upcoming-item';
-    item.style.borderLeftColor = getCatColor(ev.category);
-    item.innerHTML = `
-      <div class="upcoming-item-title">${escHtml(ev.title)}</div>
-      <div class="upcoming-item-date">${formatDateShort(ev.start)}${ev.end && ev.end !== ev.start ? ' – ' + formatDateShort(ev.end) : ''}</div>
-    `;
-    item.addEventListener('click', () => openEditModal(ev.id));
-    upcomingList.appendChild(item);
+    item.className = 'legend-item';
+    const sw = document.createElement('div');
+    sw.className = 'legend-swatch';
+    sw.style.background = state.themeColorMap[t] || '#888';
+    const lbl = document.createElement('span');
+    lbl.textContent = t;
+    item.appendChild(sw);
+    item.appendChild(lbl);
+    item.addEventListener('click', () => {
+      // Filter to just this theme
+      state.channelFilter = 'all';
+      document.querySelectorAll('input[name="chanFilter"]').forEach(r => r.checked = r.value === 'all');
+      document.getElementById('channelDisplay').textContent = 'All';
+      renderGantt();
+    });
+    el.appendChild(item);
   });
 }
 
-/* ── Day Panel ─────────────────────────────────────────────── */
-function openDayPanel(dateStr) {
-  state.selectedDate = dateStr;
-  dayPanelTitle.textContent = formatDateFull(dateStr);
+/* ── Right Panel ───────────────────────────────────────────── */
+// Timeframe display
+function updateTimeframeDisplay() {
+  document.getElementById('timeframeDisplay').textContent =
+    formatDateRange(state.viewStart, state.viewEnd);
+  document.getElementById('viewStart').value = state.viewStart;
+  document.getElementById('viewEnd').value   = state.viewEnd;
+}
 
-  const events = eventsForDate(dateStr);
-  dayPanelBody.innerHTML = '';
+// Toggle pickers
+function setupPanelToggles() {
+  // Timeframe
+  document.getElementById('timeframeTrigger').addEventListener('click', () => {
+    const p = document.getElementById('timeframePicker');
+    p.classList.toggle('open');
+    document.getElementById('channelPicker').classList.remove('open');
+  });
 
-  if (!events.length) {
-    dayPanelBody.innerHTML = '<div class="no-events">No events scheduled</div>';
-  } else {
-    events.forEach(ev => {
-      const card = document.createElement('div');
-      card.className = 'day-event-card';
-      card.style.borderLeftColor = getCatColor(ev.category);
-      card.innerHTML = `
-        <div class="day-event-card-title">${escHtml(ev.title)}</div>
-        <div class="day-event-card-meta">${CATEGORY_LABELS[ev.category] || ev.category}${ev.owner ? ' · ' + escHtml(ev.owner) : ''}</div>
-      `;
-      card.addEventListener('click', () => openEditModal(ev.id));
-      dayPanelBody.appendChild(card);
+  document.getElementById('applyTimeframe').addEventListener('click', () => {
+    const s = document.getElementById('viewStart').value;
+    const e = document.getElementById('viewEnd').value;
+    if (!s || !e || s > e) return;
+    state.viewStart = s;
+    state.viewEnd   = e;
+    document.getElementById('timeframePicker').classList.remove('open');
+    updateTimeframeDisplay();
+    renderGantt();
+  });
+
+  // Channel
+  document.getElementById('channelTrigger').addEventListener('click', () => {
+    const p = document.getElementById('channelPicker');
+    p.classList.toggle('open');
+    document.getElementById('timeframePicker').classList.remove('open');
+  });
+
+  document.querySelectorAll('input[name="chanFilter"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      state.channelFilter = radio.value;
+      document.getElementById('channelDisplay').textContent =
+        radio.value === 'all' ? 'All' : radio.value;
+      renderGantt();
     });
-  }
-
-  dayPanelOverlay.classList.add('open');
+  });
 }
 
-function closeDayPanel() {
-  dayPanelOverlay.classList.remove('open');
-  state.selectedDate = null;
-}
-
-dayPanelClose.addEventListener('click', closeDayPanel);
-dayPanelOverlay.addEventListener('click', e => {
-  if (e.target === dayPanelOverlay) closeDayPanel();
-});
-dayPanelAddBtn.addEventListener('click', () => {
-  const date = state.selectedDate;
-  closeDayPanel();
-  openAddModal(date);
+// View unit toggle (Weekly / Daily)
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.viewUnit = btn.dataset.unit;
+    renderGantt();
+  });
 });
 
 /* ── Modal ─────────────────────────────────────────────────── */
-function openAddModal(prefillDate) {
+const modalOverlay = document.getElementById('modalOverlay');
+
+function buildChannelCheckboxes(selected = []) {
+  const container = document.getElementById('channelCheckboxes');
+  container.innerHTML = '';
+  ALL_CHANNELS.forEach(ch => {
+    const label = document.createElement('label');
+    label.className = 'channel-cb-label' + (selected.includes(ch) ? ' checked' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = ch;
+    cb.checked = selected.includes(ch);
+    cb.addEventListener('change', () => label.classList.toggle('checked', cb.checked));
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(ch));
+    container.appendChild(label);
+  });
+}
+
+function updateThemeDatalist() {
+  const dl = document.getElementById('themeDatalist');
+  dl.innerHTML = '';
+  [...new Set(state.stories.map(s => s.theme))].sort().forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    dl.appendChild(opt);
+  });
+}
+
+function openAddModal() {
   state.editingId = null;
-  modalTitle.textContent = 'Add Event';
-  deleteEventBtn.style.display = 'none';
-  clearForm();
-  if (prefillDate) {
-    eventStart.value = prefillDate;
-    eventEnd.value   = prefillDate;
-  }
+  document.getElementById('modalTitle').textContent = 'Add Story';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('fieldTheme').value      = '';
+  document.getElementById('fieldStory').value      = '';
+  document.getElementById('fieldStart').value      = state.viewStart;
+  document.getElementById('fieldEnd').value        = state.viewEnd;
+  document.getElementById('fieldCategories').value = '';
+  buildChannelCheckboxes([]);
+  updateThemeDatalist();
   modalOverlay.classList.add('open');
-  eventTitle.focus();
+  document.getElementById('fieldTheme').focus();
 }
 
 function openEditModal(id) {
-  const ev = state.events.find(e => e.id === id);
-  if (!ev) return;
+  const s = state.stories.find(x => x.id === id);
+  if (!s) return;
   state.editingId = id;
-  modalTitle.textContent = 'Edit Event';
-  deleteEventBtn.style.display = 'inline-flex';
-  eventTitle.value    = ev.title;
-  eventStart.value    = ev.start;
-  eventEnd.value      = ev.end || '';
-  eventCategory.value = ev.category;
-  eventOwner.value    = ev.owner || '';
-  eventNotes.value    = ev.notes || '';
+  document.getElementById('modalTitle').textContent = 'Edit Story';
+  document.getElementById('deleteBtn').style.display = 'inline-flex';
+  document.getElementById('fieldTheme').value      = s.theme;
+  document.getElementById('fieldStory').value      = s.story;
+  document.getElementById('fieldStart').value      = s.startDate;
+  document.getElementById('fieldEnd').value        = s.endDate;
+  document.getElementById('fieldCategories').value = s.categories.join(', ');
+  buildChannelCheckboxes(s.channels);
+  updateThemeDatalist();
   modalOverlay.classList.add('open');
-  eventTitle.focus();
 }
 
 function closeModal() {
@@ -304,142 +416,71 @@ function closeModal() {
   state.editingId = null;
 }
 
-function clearForm() {
-  eventTitle.value    = '';
-  eventStart.value    = '';
-  eventEnd.value      = '';
-  eventCategory.value = 'launch';
-  eventOwner.value    = '';
-  eventNotes.value    = '';
+function getCheckedChannels() {
+  return [...document.querySelectorAll('#channelCheckboxes input:checked')].map(cb => cb.value);
 }
 
-function validateForm() {
-  if (!eventTitle.value.trim()) { shake(eventTitle); return false; }
-  if (!eventStart.value)        { shake(eventStart); return false; }
-  if (eventEnd.value && eventEnd.value < eventStart.value) {
-    shake(eventEnd);
-    return false;
-  }
-  return true;
+function parseCategories(str) {
+  return str.split(',').map(s => s.trim()).filter(Boolean);
 }
 
 function shake(el) {
-  el.style.borderColor = 'var(--c-launch)';
+  el.style.borderColor = '#F46';
   el.addEventListener('input', () => { el.style.borderColor = ''; }, { once: true });
 }
 
-saveEventBtn.addEventListener('click', () => {
-  if (!validateForm()) return;
+document.getElementById('addStoryBtn').addEventListener('click', openAddModal);
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
-  const ev = {
-    id:       state.editingId || uid(),
-    title:    eventTitle.value.trim(),
-    start:    eventStart.value,
-    end:      eventEnd.value || eventStart.value,
-    category: eventCategory.value,
-    owner:    eventOwner.value.trim(),
-    notes:    eventNotes.value.trim(),
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const theme = document.getElementById('fieldTheme').value.trim();
+  const story = document.getElementById('fieldStory').value.trim();
+  const start = document.getElementById('fieldStart').value;
+  const end   = document.getElementById('fieldEnd').value;
+
+  if (!theme) { shake(document.getElementById('fieldTheme')); return; }
+  if (!story) { shake(document.getElementById('fieldStory')); return; }
+  if (!start) { shake(document.getElementById('fieldStart')); return; }
+  if (!end)   { shake(document.getElementById('fieldEnd'));   return; }
+  if (end < start) { shake(document.getElementById('fieldEnd')); return; }
+
+  const record = {
+    id:         state.editingId || uid(),
+    theme, story,
+    channels:   getCheckedChannels(),
+    categories: parseCategories(document.getElementById('fieldCategories').value),
+    startDate:  start,
+    endDate:    end,
   };
 
   if (state.editingId) {
-    const idx = state.events.findIndex(e => e.id === state.editingId);
-    state.events[idx] = ev;
+    const idx = state.stories.findIndex(x => x.id === state.editingId);
+    state.stories[idx] = record;
   } else {
-    state.events.push(ev);
+    state.stories.push(record);
   }
 
-  saveEvents();
+  saveStories();
   closeModal();
-  renderCalendar();
+  renderGantt();
 });
 
-deleteEventBtn.addEventListener('click', () => {
+document.getElementById('deleteBtn').addEventListener('click', () => {
   if (!state.editingId) return;
-  state.events = state.events.filter(e => e.id !== state.editingId);
-  saveEvents();
+  state.stories = state.stories.filter(x => x.id !== state.editingId);
+  saveStories();
   closeModal();
-  renderCalendar();
+  renderGantt();
 });
-
-addEventBtn.addEventListener('click', () => openAddModal(null));
-modalClose.addEventListener('click', closeModal);
-cancelBtn.addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', e => {
-  if (e.target === modalOverlay) closeModal();
-});
-
-/* ── Navigation ────────────────────────────────────────────── */
-prevBtn.addEventListener('click', () => {
-  state.currentMonth--;
-  if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
-  renderCalendar();
-});
-
-nextBtn.addEventListener('click', () => {
-  state.currentMonth++;
-  if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
-  renderCalendar();
-});
-
-todayBtn.addEventListener('click', () => {
-  state.currentYear  = new Date().getFullYear();
-  state.currentMonth = new Date().getMonth();
-  renderCalendar();
-});
-
-/* ── Filters ───────────────────────────────────────────────── */
-document.querySelectorAll('.filter-check').forEach(cb => {
-  cb.addEventListener('change', () => {
-    if (cb.value === 'all') {
-      const all = cb.checked;
-      document.querySelectorAll('.filter-check:not([value="all"])').forEach(c => {
-        c.checked = all;
-        all ? state.activeFilters.add(c.value) : state.activeFilters.delete(c.value);
-      });
-      all ? state.activeFilters.add('all') : state.activeFilters.delete('all');
-    } else {
-      cb.checked ? state.activeFilters.add(cb.value) : state.activeFilters.delete(cb.value);
-      const allCheck = document.querySelector('.filter-check[value="all"]');
-      const allCats  = [...document.querySelectorAll('.filter-check:not([value="all"])')];
-      const allOn    = allCats.every(c => c.checked);
-      allCheck.checked = allOn;
-      allOn ? state.activeFilters.add('all') : state.activeFilters.delete('all');
-    }
-    renderCalendar();
-  });
-});
-
-/* ── Helpers ───────────────────────────────────────────────── */
-function getCatColor(cat) {
-  const map = {
-    launch:      '#f45d6e',
-    marketing:   '#f9a825',
-    sales:       '#26c6da',
-    content:     '#66bb6a',
-    pr:          '#ab47bc',
-    partnership: '#ff7043',
-    milestone:   '#5b6ef5',
-  };
-  return map[cat] || '#5b6ef5';
-}
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 /* ── Keyboard shortcuts ────────────────────────────────────── */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if (modalOverlay.classList.contains('open'))    closeModal();
-    if (dayPanelOverlay.classList.contains('open')) closeDayPanel();
-  }
-  if ((e.key === 'ArrowLeft')  && !modalOverlay.classList.contains('open')) prevBtn.click();
-  if ((e.key === 'ArrowRight') && !modalOverlay.classList.contains('open')) nextBtn.click();
+  if (e.key === 'Escape') closeModal();
 });
 
 /* ── Init ──────────────────────────────────────────────────── */
-renderCalendar();
+setupPanelToggles();
+updateTimeframeDisplay();
+renderGantt();
