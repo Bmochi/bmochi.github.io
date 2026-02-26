@@ -236,26 +236,37 @@ function renderGantt() {
         s.className = 'cell-story';
         s.textContent = story.story;
 
-        const meta = document.createElement('div');
-        meta.className = 'cell-meta';
+        card.appendChild(t);
+        card.appendChild(s);
 
         if (story.channel) {
-          const ch = document.createElement('span');
-          ch.className = 'cell-channel';
-          ch.textContent = story.subChannel ? `${story.channel} · ${story.subChannel}` : story.channel;
-          meta.appendChild(ch);
+          const row = document.createElement('div');
+          row.className = 'cell-row';
+          const lbl = document.createElement('span');
+          lbl.className = 'cell-label';
+          lbl.textContent = 'Channel:';
+          const val = document.createElement('span');
+          val.className = 'cell-value';
+          val.textContent = story.subChannel ? `${story.channel}, ${story.subChannel}` : story.channel;
+          row.appendChild(lbl);
+          row.appendChild(val);
+          card.appendChild(row);
         }
 
         if (story.categories.length) {
-          const cat = document.createElement('div');
-          cat.className = 'cell-cats';
-          cat.textContent = story.categories.join(', ');
-          meta.appendChild(cat);
+          const row = document.createElement('div');
+          row.className = 'cell-row';
+          const lbl = document.createElement('span');
+          lbl.className = 'cell-label';
+          lbl.textContent = 'Category:';
+          const val = document.createElement('span');
+          val.className = 'cell-value cell-value--italic';
+          val.textContent = story.categories.join(', ');
+          row.appendChild(lbl);
+          row.appendChild(val);
+          card.appendChild(row);
         }
 
-        card.appendChild(t);
-        card.appendChild(s);
-        card.appendChild(meta);
         td.appendChild(card);
       } else {
         td.className = 'gantt-cell inactive';
