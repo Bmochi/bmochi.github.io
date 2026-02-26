@@ -514,6 +514,23 @@ document.getElementById('deleteBtn').addEventListener('click', () => {
 /* ── Keyboard ──────────────────────────────────────────────── */
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+/* ── Theme toggle ──────────────────────────────────────────── */
+(function () {
+  const saved = localStorage.getItem('gtm_theme') || 'dark';
+  document.documentElement.dataset.theme = saved;
+  document.querySelectorAll('#themeToggle .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === saved);
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      document.documentElement.dataset.theme = mode;
+      localStorage.setItem('gtm_theme', mode);
+      document.querySelectorAll('#themeToggle .toggle-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.mode === mode)
+      );
+    });
+  });
+})();
+
 /* ── Init ──────────────────────────────────────────────────── */
 setupPanelToggles();
 updateTimeframeDisplay();
