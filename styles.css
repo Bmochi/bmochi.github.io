@@ -198,12 +198,61 @@ html, body {
   border-right: 1px solid rgba(255,255,255,.04);
   border-bottom: 1px solid rgba(255,255,255,.04);
   vertical-align: top;
-  min-width: 90px;
-  height: 80px;
+  min-width: 110px;
+  height: 100px;
 }
 .gantt-cell.inactive { background: var(--cell-inactive); }
 .gantt-cell.active   { cursor: pointer; transition: filter .12s; }
-.gantt-cell.active:hover { filter: brightness(1.15); }
+.gantt-cell.active:hover { filter: brightness(1.12); }
+
+/* Content inside active date cells */
+.cell-card {
+  padding: 7px 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.cell-theme {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  opacity: .7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-story {
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.cell-channel {
+  font-size: .67rem;
+  font-weight: 600;
+  opacity: .85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-cats {
+  font-size: .65rem;
+  opacity: .75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── Empty state ──────────────────────────────────────────── */
 .gantt-empty {
