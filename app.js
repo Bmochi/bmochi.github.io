@@ -438,6 +438,12 @@ function shake(el) {
 }
 
 document.getElementById('addStoryBtn').addEventListener('click', openAddModal);
+document.getElementById('resetDataBtn').addEventListener('click', () => {
+  if (confirm('Reset to default data? This will clear any stories you have added.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+});
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('cancelBtn').addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
