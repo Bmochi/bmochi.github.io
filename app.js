@@ -14,7 +14,7 @@
    }
 ─────────────────────────────────────────────────────────── */
 
-const STORAGE_KEY = 'gtm_stories_v2';
+const STORAGE_KEY = 'gtm_stories_v3';
 
 const THEME_PALETTE = [
   '#C85E18', '#3E8CB0', '#A0584A', '#4A9E6A',
@@ -25,7 +25,7 @@ const THEME_PALETTE = [
 let state = {
   stories:        loadStories(),
   viewStart:      '2026-05-25', // Monday before 5/31
-  viewEnd:        '2026-07-05',
+  viewEnd:        '2026-07-12',
   viewUnit:       'week',
   channelFilter:  'all',
   subChanFilter:  'all',
@@ -45,33 +45,48 @@ function saveStories() {
 /* Seed data from your spreadsheet screenshot */
 function seedStories() {
   return [
-    // ── Theme: Summer on the go email (5/31 – 6/6) ──────────
-    { id: uid(), theme: 'Summer on the go email',     story: 'Story 1',  channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer on the go email',     story: 'Story 2',  channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'BOGO',           categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer on the go email',     story: 'Story 3',  channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer on the go email',     story: 'Story 4',  channel: 'CRM', subChannel: 'SMS',   startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'BOGO',           categories: ['Tools'] },
-    { id: uid(), theme: 'Summer on the go email',     story: 'Story 5',  channel: 'CRM', subChannel: 'App',   startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care'] },
-    // ── Theme: Celebrating Color email (6/7 – 6/13) ─────────
-    { id: uid(), theme: 'Celebrating Color email',    story: 'Story 6',  channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Textured Hair Care'] },
-    { id: uid(), theme: 'Celebrating Color email',    story: 'Story 7',  channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'Save up to 50%', categories: ['Cosmetics'] },
-    { id: uid(), theme: 'Celebrating Color email',    story: 'Story 8',  channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Nails'] },
-    { id: uid(), theme: 'Celebrating Color email',    story: 'Story 9',  channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care', 'Hair Color'] },
-    { id: uid(), theme: 'Celebrating Color email',    story: 'Story 10', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Hair Color', 'Nails'] },
-    // ── Theme: Summer now trending email (6/14 – 6/20) ──────
-    { id: uid(), theme: 'Summer now trending email',  story: 'Story 11', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '',               categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer now trending email',  story: 'Story 12', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '',               categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer now trending email',  story: 'Story 13', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '',               categories: ['Tools'] },
-    { id: uid(), theme: 'Summer now trending email',  story: 'Story 14', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '',               categories: ['Hair Care'] },
-    { id: uid(), theme: 'Summer now trending email',  story: 'Story 15', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '',               categories: ['Textured Hair Care'] },
-    // ── Theme: Celebrating Color SMS (6/21 – 6/27) ──────────
-    { id: uid(), theme: 'Celebrating Color SMS',      story: 'Story 16', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '',               categories: ['Cosmetics'] },
-    { id: uid(), theme: 'Celebrating Color SMS',      story: 'Story 17', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '',               categories: ['Nails'] },
-    { id: uid(), theme: 'Celebrating Color SMS',      story: 'Story 18', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '',               categories: ['Hair Care', 'Hair Color'] },
-    { id: uid(), theme: 'Celebrating Color SMS',      story: 'Story 19', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '',               categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Celebrating Color SMS',      story: 'Story 20', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '',               categories: ['Hair Color', 'Nails'] },
-    // ── Theme: Summer now trending App push (6/28 – 7/4) ────
-    { id: uid(), theme: 'Summer now trending App push', story: 'Story 21', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '', categories: ['Hair Color', 'Nails'] },
-    { id: uid(), theme: 'Summer now trending App push', story: 'Story 22', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '', categories: ['Tools'] },
+    // ── CRM · Summer on the go (5/31 – 6/6) ─────────────────
+    { id: uid(), theme: 'Summer on the go',   story: 'Story 1', channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer on the go',   story: 'Story 2', channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'BOGO',           categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer on the go',   story: 'Story 3', channel: 'CRM', subChannel: 'Email', startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer on the go',   story: 'Story 4', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'BOGO',           categories: ['Tools'] },
+    { id: uid(), theme: 'Summer on the go',   story: 'Story 5', channel: 'CRM', subChannel: 'App',   startDate: '2026-05-31', endDate: '2026-06-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care'] },
+    // ── CRM · Celebrating Color (6/7 – 6/13) ────────────────
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 1', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Textured Hair Care'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 2', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'Save up to 50%', categories: ['Cosmetics'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 3', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Nails'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 4', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care', 'Hair Color'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 5', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-07', endDate: '2026-06-13', promo: true,  promoMsg: 'BOGO',           categories: ['Hair Color', 'Nails'] },
+    // ── CRM · Summer now trending (6/14 – 6/20) ─────────────
+    { id: uid(), theme: 'Summer now trending', story: 'Story 1', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '', categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 2', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '', categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 3', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '', categories: ['Tools'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 4', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '', categories: ['Hair Care'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 5', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-14', endDate: '2026-06-20', promo: false, promoMsg: '', categories: ['Textured Hair Care'] },
+    // ── CRM · Celebrating Color (6/21 – 6/27) ───────────────
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 1', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '', categories: ['Cosmetics'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 2', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '', categories: ['Nails'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 3', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '', categories: ['Hair Care', 'Hair Color'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 4', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '', categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 5', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-21', endDate: '2026-06-27', promo: false, promoMsg: '', categories: ['Hair Color', 'Nails'] },
+    // ── CRM · Summer now trending (6/28 – 7/4) ──────────────
+    { id: uid(), theme: 'Summer now trending', story: 'Story 1', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '',               categories: ['Hair Color', 'Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 2', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '',               categories: ['Tools'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 3', channel: 'CRM', subChannel: 'Email', startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '',               categories: ['Hair Care'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 4', channel: 'CRM', subChannel: 'SMS',   startDate: '2026-06-28', endDate: '2026-07-04', promo: false, promoMsg: '',               categories: ['Textured Hair Care'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 5', channel: 'CRM', subChannel: 'App',   startDate: '2026-06-28', endDate: '2026-07-04', promo: true,  promoMsg: 'Save up to 50%', categories: ['Cosmetics'] },
+    // ── Paid · Summer now trending (7/4 – various) ──────────
+    { id: uid(), theme: 'Summer now trending', story: 'Story 1', channel: 'Paid', subChannel: 'Paid Search', startDate: '2026-07-04', endDate: '2026-07-05', promo: false, promoMsg: '',               categories: ['Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 2', channel: 'Paid', subChannel: 'Paid Social', startDate: '2026-07-04', endDate: '2026-07-06', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care', 'Hair Color'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 3', channel: 'Paid', subChannel: 'Paid Search', startDate: '2026-07-04', endDate: '2026-07-07', promo: false, promoMsg: '',               categories: ['Textured Hair Care'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 4', channel: 'Paid', subChannel: 'Paid Social', startDate: '2026-07-04', endDate: '2026-07-08', promo: false, promoMsg: '',               categories: ['Cosmetics'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 5', channel: 'Paid', subChannel: 'Paid Search', startDate: '2026-07-04', endDate: '2026-07-09', promo: true,  promoMsg: 'BOGO',           categories: ['Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 6', channel: 'Paid', subChannel: 'Paid Social', startDate: '2026-07-04', endDate: '2026-07-10', promo: true,  promoMsg: 'Save up to 50%', categories: ['Hair Care', 'Hair Color'] },
+    // ── Organic · Celebrating Color (5/31 – 6/6) ────────────
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 1', channel: 'Organic',    subChannel: 'Organic Social', startDate: '2026-05-31', endDate: '2026-06-06', promo: false, promoMsg: '', categories: ['Cosmetics'] },
+    // ── Influencer · (5/31 – 7/1) ───────────────────────────
+    { id: uid(), theme: 'Celebrating Color',  story: 'Story 2', channel: 'Influencer', subChannel: 'Ambassador',     startDate: '2026-05-31', endDate: '2026-07-01', promo: false, promoMsg: '', categories: ['Nails'] },
+    { id: uid(), theme: 'Summer now trending', story: 'Story 3', channel: 'Influencer', subChannel: 'Associate',     startDate: '2026-05-31', endDate: '2026-07-01', promo: false, promoMsg: '', categories: ['Hair Care', 'Hair Color'] },
   ];
 }
 
