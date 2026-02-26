@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTM Plan Calendar</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <h1 class="logo">GTM Calendar</h1>
+      <p class="tagline">Go-To-Market Plan</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-primary" id="addEventBtn">+ Add Event</button>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <section class="sidebar-section">
+        <h3 class="sidebar-title">Filter by Category</h3>
+        <div class="filter-list" id="filterList">
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="all" checked />
+            <span class="filter-dot dot-all"></span>
+            All Events
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="launch" checked />
+            <span class="filter-dot dot-launch"></span>
+            Product Launch
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="marketing" checked />
+            <span class="filter-dot dot-marketing"></span>
+            Marketing
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="sales" checked />
+            <span class="filter-dot dot-sales"></span>
+            Sales
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="content" checked />
+            <span class="filter-dot dot-content"></span>
+            Content
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="pr" checked />
+            <span class="filter-dot dot-pr"></span>
+            PR &amp; Comms
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="partnership" checked />
+            <span class="filter-dot dot-partnership"></span>
+            Partnership
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" class="filter-check" value="milestone" checked />
+            <span class="filter-dot dot-milestone"></span>
+            Milestone
+          </label>
+        </div>
+      </section>
+
+      <section class="sidebar-section">
+        <h3 class="sidebar-title">Upcoming Events</h3>
+        <div class="upcoming-list" id="upcomingList">
+          <!-- filled by JS -->
+        </div>
+      </section>
+    </aside>
+
+    <!-- Calendar Area -->
+    <main class="calendar-container">
+      <div class="calendar-nav">
+        <button class="nav-btn" id="prevMonth">&#8249;</button>
+        <h2 class="month-label" id="monthLabel">January 2026</h2>
+        <button class="nav-btn" id="nextMonth">&#8250;</button>
+        <button class="btn btn-secondary" id="todayBtn">Today</button>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="day-header">Sun</div>
+        <div class="day-header">Mon</div>
+        <div class="day-header">Tue</div>
+        <div class="day-header">Wed</div>
+        <div class="day-header">Thu</div>
+        <div class="day-header">Fri</div>
+        <div class="day-header">Sat</div>
+        <!-- Days filled by JS -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Event Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="eventModal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Event</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="eventTitle">Event Title *</label>
+          <input class="form-input" type="text" id="eventTitle" placeholder="e.g. Product Launch v2.0" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="eventStart">Start Date *</label>
+            <input class="form-input" type="date" id="eventStart" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="eventEnd">End Date</label>
+            <input class="form-input" type="date" id="eventEnd" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="eventCategory">Category *</label>
+          <select class="form-select" id="eventCategory">
+            <option value="launch">Product Launch</option>
+            <option value="marketing">Marketing</option>
+            <option value="sales">Sales</option>
+            <option value="content">Content</option>
+            <option value="pr">PR &amp; Comms</option>
+            <option value="partnership">Partnership</option>
+            <option value="milestone">Milestone</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="eventOwner">Owner</label>
+          <input class="form-input" type="text" id="eventOwner" placeholder="e.g. Marketing Team" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="eventNotes">Notes</label>
+          <textarea class="form-textarea" id="eventNotes" placeholder="Additional details, goals, KPIs..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="deleteEventBtn" style="display:none">Delete</button>
+        <div class="modal-footer-right">
+          <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveEventBtn">Save Event</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Detail Panel -->
+  <div class="day-panel-overlay" id="dayPanelOverlay">
+    <div class="day-panel" id="dayPanel">
+      <div class="day-panel-header">
+        <h3 id="dayPanelTitle">Events</h3>
+        <button class="modal-close" id="dayPanelClose">&times;</button>
+      </div>
+      <div class="day-panel-body" id="dayPanelBody">
+        <!-- filled by JS -->
+      </div>
+      <div class="day-panel-footer">
+        <button class="btn btn-primary btn-sm" id="dayPanelAddBtn">+ Add Event This Day</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
