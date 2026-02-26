@@ -224,6 +224,39 @@ function renderGantt() {
         td.className = 'gantt-cell active';
         td.style.backgroundColor = color;
         td.addEventListener('click', () => openEditModal(story.id));
+
+        const card = document.createElement('div');
+        card.className = 'cell-card';
+
+        const t = document.createElement('div');
+        t.className = 'cell-theme';
+        t.textContent = story.theme;
+
+        const s = document.createElement('div');
+        s.className = 'cell-story';
+        s.textContent = story.story;
+
+        const meta = document.createElement('div');
+        meta.className = 'cell-meta';
+
+        if (story.channel) {
+          const ch = document.createElement('span');
+          ch.className = 'cell-channel';
+          ch.textContent = story.subChannel ? `${story.channel} · ${story.subChannel}` : story.channel;
+          meta.appendChild(ch);
+        }
+
+        if (story.categories.length) {
+          const cat = document.createElement('div');
+          cat.className = 'cell-cats';
+          cat.textContent = story.categories.join(', ');
+          meta.appendChild(cat);
+        }
+
+        card.appendChild(t);
+        card.appendChild(s);
+        card.appendChild(meta);
+        td.appendChild(card);
       } else {
         td.className = 'gantt-cell inactive';
       }
