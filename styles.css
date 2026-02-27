@@ -233,6 +233,21 @@ html, body {
 .gantt-cell.active   { cursor: pointer; transition: filter .12s; }
 .gantt-cell.active:hover { filter: brightness(1.12); }
 
+/* Sub-channel tags inside a coloured active cell — override to white so they're always legible */
+.gantt-cell.active .sub-tag {
+  color: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.38);
+}
+
+/* Tag row shown inside a cell card (all-view channel pills) */
+.cell-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
 /* Content inside active date cells */
 .cell-card {
   padding: 8px 10px;
