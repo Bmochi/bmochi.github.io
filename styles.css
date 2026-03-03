@@ -233,7 +233,20 @@ html, body {
 .gantt-cell.active   { cursor: pointer; transition: filter .12s; }
 .gantt-cell.active:hover { filter: brightness(1.12); }
 
-/* Sub-channel tags inside a coloured active cell — override to white so they're always legible */
+/* Channel tags (parent channel: CRM, Paid, Organic, Influencer…) */
+.chan-tag {
+  display: inline-block;
+  font-size: .65rem; font-weight: 700;
+  padding: 1px 6px; border-radius: 3px;
+  border: 1px solid currentColor;
+}
+.chan-tag.chan-CRM        { color: #FF8A65; background: rgba(255,138,101,.13); }
+.chan-tag.chan-Paid       { color: #4DB8FF; background: rgba(77,184,255,.13);  }
+.chan-tag.chan-Organic    { color: #4FC65A; background: rgba(79,198,90,.13);   }
+.chan-tag.chan-Influencer { color: #C47EF5; background: rgba(196,126,245,.13); }
+
+/* Both tag types inside a coloured active cell → white pills for legibility */
+.gantt-cell.active .chan-tag,
 .gantt-cell.active .sub-tag {
   color: rgba(255,255,255,.92);
   background: rgba(255,255,255,.18);

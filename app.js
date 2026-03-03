@@ -227,11 +227,11 @@ function renderGantt() {
     metaDiv.className = 'label-meta';
 
     if (isAllView) {
-      // All unique sub-channels across merged entries, shown as tags
-      [...new Set(entries.map(e => e.subChannel).filter(Boolean))].forEach(sc => {
+      // One tag per unique parent channel (CRM, Paid, Organic, Influencer…)
+      [...new Set(entries.map(e => e.channel).filter(Boolean))].forEach(ch => {
         const tag = document.createElement('span');
-        tag.className = `sub-tag sub-${sc.replace(/\s+/g, '-')}`;
-        tag.textContent = sc;
+        tag.className = `chan-tag chan-${ch.replace(/\s+/g, '-')}`;
+        tag.textContent = ch;
         metaDiv.appendChild(tag);
       });
       // Unique promo messages
@@ -296,15 +296,15 @@ function renderGantt() {
         card.appendChild(s);
 
         if (isAllView) {
-          // Sub-channel tags for whichever entries are active this column
-          const activeSubs = [...new Set(activeEntries.map(e => e.subChannel).filter(Boolean))];
-          if (activeSubs.length) {
+          // Channel tags for whichever channels are active this column
+          const activeChans = [...new Set(activeEntries.map(e => e.channel).filter(Boolean))];
+          if (activeChans.length) {
             const tagsRow = document.createElement('div');
             tagsRow.className = 'cell-channels';
-            activeSubs.forEach(sc => {
+            activeChans.forEach(ch => {
               const tag = document.createElement('span');
-              tag.className = `sub-tag sub-${sc.replace(/\s+/g, '-')}`;
-              tag.textContent = sc;
+              tag.className = `chan-tag chan-${ch.replace(/\s+/g, '-')}`;
+              tag.textContent = ch;
               tagsRow.appendChild(tag);
             });
             card.appendChild(tagsRow);
