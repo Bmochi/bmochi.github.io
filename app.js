@@ -103,6 +103,11 @@ function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Dat
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function getMondayOf(d) { const day = d.getDay(); return addDays(d, day === 0 ? -6 : 1 - day); }
 
+function fmtShort(s) {
+  const d = parseDate(s);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 function formatColHeader(dateStr, unit) {
   const d = parseDate(dateStr);
   if (unit === 'week') {
@@ -360,6 +365,31 @@ function renderGantt() {
         rowEl.appendChild(lbl);
         rowEl.appendChild(val);
         card.appendChild(rowEl);
+      }
+
+      // Promo section — deduplicated by date range + message
+      const seen = new Set();
+      const promos = cs.ae.filter(e => {
+        if (!e.promo || !e.promoMsg) return false;
+        const k = `${e.startDate}|${e.endDate}|${e.promoMsg}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      if (promos.length) {
+        const section = document.createElement('div');
+        section.className = 'cell-promo-section';
+        const hdr = document.createElement('div');
+        hdr.className = 'cell-promo-label';
+        hdr.textContent = 'Promo';
+        section.appendChild(hdr);
+        promos.forEach(e => {
+          const line = document.createElement('div');
+          line.className = 'cell-promo-line';
+          line.textContent = `${fmtShort(e.startDate)}–${fmtShort(e.endDate)}: ${e.promoMsg}`;
+          section.appendChild(line);
+        });
+        card.appendChild(section);
       }
 
       td.appendChild(card);

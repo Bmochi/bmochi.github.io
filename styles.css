@@ -227,7 +227,7 @@ html, body {
   border-bottom: 1px solid rgba(255,255,255,.04);
   vertical-align: top;
   min-width: 120px;
-  height: 115px;
+  min-height: 115px;
 }
 .gantt-cell.inactive { background: var(--cell-inactive); }
 .gantt-cell.active   { cursor: pointer; transition: filter .12s; }
@@ -251,6 +251,29 @@ html, body {
   color: rgba(255,255,255,.92);
   background: rgba(255,255,255,.18);
   border-color: rgba(255,255,255,.38);
+}
+
+/* Promo section inside cell cards */
+.cell-promo-section {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255,255,255,.22);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cell-promo-label {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  opacity: .7;
+}
+.cell-promo-line {
+  font-size: .67rem;
+  font-weight: 500;
+  line-height: 1.35;
+  opacity: .92;
 }
 
 /* Tag row shown inside a cell card (all-view channel pills) */
