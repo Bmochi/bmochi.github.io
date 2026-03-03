@@ -272,84 +272,99 @@ function renderGantt() {
     labelTd.addEventListener('click', () => openEditModal(rep.id));
     tr.appendChild(labelTd);
 
-    /* ── Date cells ── */
-    cols.forEach(col => {
-      const td            = tr.insertCell();
-      const activeEntries = entries.filter(s => storyActiveForCol(s, col));
+    /* ── Date cells with colspan merging ── */
+    // Pre-compute each column's active entries + a fingerprint for identity comparison
+    const colStates = cols.map(col => {
+      const ae = entries.filter(s => storyActiveForCol(s, col));
+      if (!ae.length) return null;
+      return { ae, fp: ae.map(e => e.id).sort().join('|') };
+    });
 
-      if (activeEntries.length) {
-        td.className = 'gantt-cell active';
-        td.style.backgroundColor = color;
-        td.addEventListener('click', () => openEditModal(activeEntries[0].id));
+    let ci = 0;
+    while (ci < cols.length) {
+      const cs = colStates[ci];
 
-        const card = document.createElement('div');
-        card.className = 'cell-card';
+      if (!cs) {
+        const td = tr.insertCell();
+        td.className = 'gantt-cell inactive';
+        ci++;
+        continue;
+      }
 
-        const t = document.createElement('div');
-        t.className = 'cell-theme';
-        t.textContent = rep.theme;
-        card.appendChild(t);
+      // Count how many consecutive columns share the exact same active-entry set
+      let span = 1;
+      while (ci + span < cols.length && colStates[ci + span]?.fp === cs.fp) span++;
 
-        const s = document.createElement('div');
-        s.className = 'cell-story';
-        s.textContent = rep.story;
-        card.appendChild(s);
+      const td = tr.insertCell();
+      if (span > 1) td.colSpan = span;
+      td.className = 'gantt-cell active';
+      td.style.backgroundColor = color;
+      td.addEventListener('click', () => openEditModal(cs.ae[0].id));
 
-        if (isAllView) {
-          // Channel tags for whichever channels are active this column
-          const activeChans = [...new Set(activeEntries.map(e => e.channel).filter(Boolean))];
-          if (activeChans.length) {
-            const tagsRow = document.createElement('div');
-            tagsRow.className = 'cell-channels';
-            activeChans.forEach(ch => {
-              const tag = document.createElement('span');
-              tag.className = `chan-tag chan-${ch.replace(/\s+/g, '-')}`;
-              tag.textContent = ch;
-              tagsRow.appendChild(tag);
-            });
-            card.appendChild(tagsRow);
-          }
-        } else {
-          if (activeEntries[0].channel) {
-            const rowEl = document.createElement('div');
-            rowEl.className = 'cell-row';
-            const lbl = document.createElement('span');
-            lbl.className = 'cell-label';
-            lbl.textContent = 'Channel:';
-            const val = document.createElement('span');
-            val.className = 'cell-value';
-            val.textContent = activeEntries[0].subChannel
-              ? `${activeEntries[0].channel}, ${activeEntries[0].subChannel}`
-              : activeEntries[0].channel;
-            rowEl.appendChild(lbl);
-            rowEl.appendChild(val);
-            card.appendChild(rowEl);
-          }
+      const card = document.createElement('div');
+      card.className = 'cell-card';
+
+      const t = document.createElement('div');
+      t.className = 'cell-theme';
+      t.textContent = rep.theme;
+      card.appendChild(t);
+
+      const s = document.createElement('div');
+      s.className = 'cell-story';
+      s.textContent = rep.story;
+      card.appendChild(s);
+
+      if (isAllView) {
+        const activeChans = [...new Set(cs.ae.map(e => e.channel).filter(Boolean))];
+        if (activeChans.length) {
+          const tagsRow = document.createElement('div');
+          tagsRow.className = 'cell-channels';
+          activeChans.forEach(ch => {
+            const tag = document.createElement('span');
+            tag.className = `chan-tag chan-${ch.replace(/\s+/g, '-')}`;
+            tag.textContent = ch;
+            tagsRow.appendChild(tag);
+          });
+          card.appendChild(tagsRow);
         }
-
-        // Categories: merged for all-view, single entry for filtered
-        const cellCats = isAllView
-          ? [...new Set(activeEntries.flatMap(e => e.categories))]
-          : activeEntries[0].categories;
-        if (cellCats.length) {
+      } else {
+        if (cs.ae[0].channel) {
           const rowEl = document.createElement('div');
           rowEl.className = 'cell-row';
           const lbl = document.createElement('span');
           lbl.className = 'cell-label';
-          lbl.textContent = 'Category:';
+          lbl.textContent = 'Channel:';
           const val = document.createElement('span');
-          val.className = 'cell-value cell-value--italic';
-          val.textContent = cellCats.join(', ');
+          val.className = 'cell-value';
+          val.textContent = cs.ae[0].subChannel
+            ? `${cs.ae[0].channel}, ${cs.ae[0].subChannel}`
+            : cs.ae[0].channel;
           rowEl.appendChild(lbl);
           rowEl.appendChild(val);
           card.appendChild(rowEl);
         }
-
-        td.appendChild(card);
-      } else {
-        td.className = 'gantt-cell inactive';
       }
-    });
+
+      const cellCats = isAllView
+        ? [...new Set(cs.ae.flatMap(e => e.categories))]
+        : cs.ae[0].categories;
+      if (cellCats.length) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'cell-row';
+        const lbl = document.createElement('span');
+        lbl.className = 'cell-label';
+        lbl.textContent = 'Category:';
+        const val = document.createElement('span');
+        val.className = 'cell-value cell-value--italic';
+        val.textContent = cellCats.join(', ');
+        rowEl.appendChild(lbl);
+        rowEl.appendChild(val);
+        card.appendChild(rowEl);
+      }
+
+      td.appendChild(card);
+      ci += span;
+    }
   });
 
   renderLegend();
