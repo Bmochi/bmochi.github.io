@@ -1,0 +1,12 @@
+{
+  "name": "sharepoint-slack-alert",
+  "version": "1.0.0",
+  "description": "Polls a SharePoint Excel file and sends Slack alerts for new input requests",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
