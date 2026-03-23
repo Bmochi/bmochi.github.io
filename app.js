@@ -625,3 +625,433 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 setupPanelToggles();
 updateTimeframeDisplay();
 renderGantt();
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPETITOR AD MONITOR
+   Uses Firecrawl /v1/extract to pull promotions, pricing, and
+   campaigns from competitor pages on a configurable schedule.
+═══════════════════════════════════════════════════════════════ */
+
+const COMP_STORAGE_KEY = 'comp_monitor_v1';
+
+function defaultCompState() {
+  return { settings: { apiKey: '', scheduleHours: 24 }, competitors: [] };
+}
+
+let compState = (() => {
+  try { return JSON.parse(localStorage.getItem(COMP_STORAGE_KEY)) || defaultCompState(); }
+  catch { return defaultCompState(); }
+})();
+
+function saveCompMonitor() {
+  const clean = {
+    settings: compState.settings,
+    competitors: compState.competitors.map(({ _loading, ...c }) => c),
+  };
+  localStorage.setItem(COMP_STORAGE_KEY, JSON.stringify(clean));
+}
+
+/* ── View switching ─────────────────────────────────────────── */
+function switchView(view) {
+  document.getElementById('viewCalendar').style.display     = view === 'calendar'    ? '' : 'none';
+  document.getElementById('viewCompetitors').style.display  = view === 'competitors' ? '' : 'none';
+  document.getElementById('calendarControls').style.display = view === 'calendar'    ? 'flex' : 'none';
+  document.querySelectorAll('.nav-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.view === view)
+  );
+  if (view === 'competitors') {
+    renderCompMonitor();
+    checkCompSchedule();
+  }
+}
+
+document.querySelectorAll('.nav-tab').forEach(btn =>
+  btn.addEventListener('click', () => switchView(btn.dataset.view))
+);
+
+/* ── Firecrawl extraction schema ────────────────────────────── */
+const FIRECRAWL_SCHEMA = {
+  type: 'object',
+  properties: {
+    promotions: {
+      type: 'array',
+      description: 'Current promotions, sales, and discount offers',
+      items: {
+        type: 'object',
+        properties: {
+          title:      { type: 'string' },
+          discount:   { type: 'string', description: 'e.g. "50% off", "BOGO", "Buy 2 Get 1"' },
+          code:       { type: 'string', description: 'Promo or coupon code if shown' },
+          validUntil: { type: 'string', description: 'Expiry or end date if mentioned' },
+          categories: { type: 'string', description: 'Product categories this applies to' },
+        },
+        required: ['title'],
+      },
+    },
+    pricing: {
+      type: 'array',
+      description: 'Pricing tiers, membership plans, or service levels',
+      items: {
+        type: 'object',
+        properties: {
+          tier:       { type: 'string' },
+          price:      { type: 'string' },
+          highlights: { type: 'string' },
+        },
+        required: ['tier', 'price'],
+      },
+    },
+    activeCampaigns: {
+      type: 'array',
+      description: 'Active marketing campaigns, seasonal themes, or featured collections',
+      items: { type: 'string' },
+    },
+    featuredCategories: {
+      type: 'array',
+      description: 'Product or service categories currently featured or highlighted',
+      items: { type: 'string' },
+    },
+    summary: {
+      type: 'string',
+      description: 'Brief 1-2 sentence summary of the current marketing focus and positioning',
+    },
+  },
+};
+
+/* ── Poll for async extract job ─────────────────────────────── */
+async function pollExtract(jobId, apiKey) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const res  = await fetch(`https://api.firecrawl.dev/v1/extract/${jobId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const json = await res.json();
+    if (json.status === 'completed') return json.data;
+    if (json.status === 'failed')    throw new Error(json.error || 'Extraction failed');
+  }
+  throw new Error('Timeout: extraction took too long (60 s)');
+}
+
+/* ── Scrape one competitor ──────────────────────────────────── */
+async function scrapeCompetitorById(id) {
+  const comp = compState.competitors.find(c => c.id === id);
+  if (!comp || comp._loading) return;
+
+  const { apiKey } = compState.settings;
+  if (!apiKey) {
+    document.getElementById('compSettingsPanel').style.display = 'block';
+    document.getElementById('firecrawlApiKey').focus();
+    return;
+  }
+
+  comp._loading = true;
+  comp.error    = null;
+  renderCompMonitor();
+
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/extract', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization:  `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        urls:   [comp.url],
+        prompt: 'Extract all current promotions, sales, discounts, pricing tiers, active marketing campaigns, seasonal themes, and featured product categories. Focus on competitive intelligence useful for a marketing team.',
+        schema: FIRECRAWL_SCHEMA,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+
+    let data;
+    if (json.status === 'completed') {
+      data = json.data;
+    } else if (json.id) {
+      data = await pollExtract(json.id, apiKey);
+    } else {
+      data = json.data || json;
+    }
+
+    comp.data        = data;
+    comp.lastScraped = new Date().toISOString();
+    comp.error       = null;
+  } catch (e) {
+    comp.error = e.message;
+    comp.data  = null;
+  } finally {
+    comp._loading = false;
+    saveCompMonitor();
+    renderCompMonitor();
+  }
+}
+
+/* ── Refresh all ────────────────────────────────────────────── */
+async function refreshAllCompetitors() {
+  const btn = document.getElementById('refreshAllBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Refreshing…';
+  try {
+    for (const comp of [...compState.competitors]) {
+      await scrapeCompetitorById(comp.id);
+    }
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '↻ Refresh All';
+  }
+}
+
+/* ── Schedule check (runs on tab open) ──────────────────────── */
+function checkCompSchedule() {
+  const { scheduleHours, apiKey } = compState.settings;
+  if (!scheduleHours || !apiKey) return;
+  const threshold = scheduleHours * 3_600_000;
+  compState.competitors.forEach(comp => {
+    const stale = !comp.lastScraped ||
+      Date.now() - new Date(comp.lastScraped).getTime() > threshold;
+    if (stale && !comp._loading) scrapeCompetitorById(comp.id);
+  });
+}
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function timeAgo(iso) {
+  if (!iso) return 'Never';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ── Render comparison table ────────────────────────────────── */
+function renderCompMonitor() {
+  const empty   = document.getElementById('compEmpty');
+  const wrapper = document.getElementById('compTableWrap');
+
+  // Sync settings UI
+  document.getElementById('firecrawlApiKey').value     = compState.settings.apiKey || '';
+  document.getElementById('scheduleHoursSelect').value = String(compState.settings.scheduleHours);
+  const sh = compState.settings.scheduleHours;
+  document.getElementById('scheduleInfo').textContent  =
+    sh ? `Auto-refresh: every ${sh >= 24 ? sh / 24 + 'd' : sh + 'h'}` : 'Manual refresh only';
+
+  if (!compState.competitors.length) {
+    empty.style.display   = 'flex';
+    wrapper.style.display = 'none';
+    return;
+  }
+  empty.style.display   = 'none';
+  wrapper.style.display = 'block';
+
+  wrapper.innerHTML = '';
+  const table = document.createElement('table');
+  table.className = 'comp-table';
+
+  /* ── Column headers ── */
+  const thead = table.createTHead();
+  const hRow  = thead.insertRow();
+
+  const lblTh = document.createElement('th');
+  lblTh.className = 'comp-row-label-th';
+  hRow.appendChild(lblTh);
+
+  compState.competitors.forEach(comp => {
+    const th = document.createElement('th');
+    th.className = 'comp-col-th';
+    th.innerHTML = `
+      <div class="comp-col-name">${escHtml(comp.name)}</div>
+      <div class="comp-col-url">${escHtml(new URL(comp.url).hostname)}</div>
+    `;
+
+    const actions = document.createElement('div');
+    actions.className = 'comp-col-actions';
+
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className   = 'btn btn-secondary btn-sm';
+    refreshBtn.textContent = comp._loading ? 'Scraping…' : '↻ Refresh';
+    refreshBtn.disabled    = !!comp._loading;
+    refreshBtn.addEventListener('click', () => scrapeCompetitorById(comp.id));
+
+    const delBtn = document.createElement('button');
+    delBtn.className   = 'btn btn-danger btn-sm';
+    delBtn.textContent = '✕';
+    delBtn.title       = `Remove ${comp.name}`;
+    delBtn.addEventListener('click', () => {
+      if (!confirm(`Remove "${escHtml(comp.name)}" from monitoring?`)) return;
+      compState.competitors = compState.competitors.filter(c => c.id !== comp.id);
+      saveCompMonitor();
+      renderCompMonitor();
+    });
+
+    actions.appendChild(refreshBtn);
+    actions.appendChild(delBtn);
+    th.appendChild(actions);
+    hRow.appendChild(th);
+  });
+
+  /* ── Data rows ── */
+  const tbody = table.createTBody();
+
+  function addRow(label, cellFn) {
+    const tr  = tbody.insertRow();
+    const lTd = tr.insertCell();
+    lTd.className   = 'comp-row-label';
+    lTd.textContent = label;
+    compState.competitors.forEach(comp => {
+      const td  = tr.insertCell();
+      td.className = 'comp-cell';
+      cellFn(td, comp);
+    });
+  }
+
+  /* Last Updated */
+  addRow('Last Updated', (td, comp) => {
+    const cls = comp._loading ? 'loading' : comp.error ? 'error' : 'ok';
+    const txt = comp._loading
+      ? 'Scraping…'
+      : comp.error
+        ? `⚠ ${comp.error}`
+        : timeAgo(comp.lastScraped);
+    td.innerHTML = `<span class="comp-status comp-status--${cls}">${escHtml(txt)}</span>`;
+  });
+
+  /* Overview */
+  addRow('Overview', (td, comp) => {
+    if (comp._loading) {
+      td.innerHTML = '<span class="comp-skeleton"></span><span class="comp-skeleton" style="width:65%"></span>';
+      return;
+    }
+    td.innerHTML = comp.data?.summary
+      ? `<p class="comp-summary">${escHtml(comp.data.summary)}</p>`
+      : '—';
+  });
+
+  /* Active Promotions */
+  addRow('Active Promotions', (td, comp) => {
+    if (comp._loading) { td.innerHTML = '<span class="comp-skeleton"></span><span class="comp-skeleton" style="width:80%"></span>'; return; }
+    const promos = comp.data?.promotions;
+    if (!promos?.length) { td.textContent = '—'; return; }
+    promos.forEach(p => {
+      const meta = [
+        p.code       && `Code: ${p.code}`,
+        p.validUntil && `Until: ${p.validUntil}`,
+        p.categories,
+      ].filter(Boolean);
+      const card = document.createElement('div');
+      card.className = 'comp-promo-card';
+      card.innerHTML = `
+        <div class="comp-promo-title">${escHtml(p.title)}</div>
+        ${p.discount ? `<span class="comp-discount-badge">${escHtml(p.discount)}</span>` : ''}
+        ${meta.length ? `<div class="comp-promo-meta">${meta.map(escHtml).join(' · ')}</div>` : ''}
+      `;
+      td.appendChild(card);
+    });
+  });
+
+  /* Campaigns */
+  addRow('Campaigns', (td, comp) => {
+    if (comp._loading) { td.innerHTML = '<span class="comp-skeleton"></span>'; return; }
+    const list = comp.data?.activeCampaigns;
+    if (!list?.length) { td.textContent = '—'; return; }
+    const ul = document.createElement('ul');
+    ul.className = 'comp-list';
+    list.forEach(c => { const li = document.createElement('li'); li.textContent = c; ul.appendChild(li); });
+    td.appendChild(ul);
+  });
+
+  /* Featured Categories */
+  addRow('Featured Categories', (td, comp) => {
+    if (comp._loading) { td.innerHTML = '<span class="comp-skeleton" style="width:75%"></span>'; return; }
+    const cats = comp.data?.featuredCategories;
+    if (!cats?.length) { td.textContent = '—'; return; }
+    const wrap = document.createElement('div');
+    wrap.className = 'comp-tags';
+    cats.forEach(c => {
+      const span = document.createElement('span');
+      span.className   = 'comp-cat-tag';
+      span.textContent = c;
+      wrap.appendChild(span);
+    });
+    td.appendChild(wrap);
+  });
+
+  /* Pricing / Plans */
+  addRow('Pricing / Plans', (td, comp) => {
+    if (comp._loading) { td.innerHTML = '<span class="comp-skeleton"></span>'; return; }
+    const tiers = comp.data?.pricing;
+    if (!tiers?.length) { td.textContent = '—'; return; }
+    tiers.forEach(tier => {
+      const card = document.createElement('div');
+      card.className = 'comp-tier-card';
+      card.innerHTML = `
+        <div class="comp-tier-name">${escHtml(tier.tier)}</div>
+        <div class="comp-tier-price">${escHtml(tier.price)}</div>
+        ${tier.highlights ? `<div class="comp-tier-hl">${escHtml(tier.highlights)}</div>` : ''}
+      `;
+      td.appendChild(card);
+    });
+  });
+
+  wrapper.appendChild(table);
+}
+
+/* ── Competitor modal ───────────────────────────────────────── */
+const compModalOverlay = document.getElementById('compModalOverlay');
+
+function openAddCompetitorModal() {
+  document.getElementById('compName').value = '';
+  document.getElementById('compUrl').value  = '';
+  compModalOverlay.classList.add('open');
+  document.getElementById('compName').focus();
+}
+
+function closeAddCompetitorModal() { compModalOverlay.classList.remove('open'); }
+
+document.getElementById('addCompetitorBtn').addEventListener('click', openAddCompetitorModal);
+document.getElementById('closeCompModal').addEventListener('click', closeAddCompetitorModal);
+document.getElementById('cancelCompetitorBtn').addEventListener('click', closeAddCompetitorModal);
+compModalOverlay.addEventListener('click', e => { if (e.target === compModalOverlay) closeAddCompetitorModal(); });
+
+document.getElementById('saveCompetitorBtn').addEventListener('click', () => {
+  const name = document.getElementById('compName').value.trim();
+  let   url  = document.getElementById('compUrl').value.trim();
+  if (!name || !url) return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try { new URL(url); } catch { alert('Please enter a valid URL.'); return; }
+
+  const newComp = { id: uid(), name, url, lastScraped: null, data: null, error: null };
+  compState.competitors.push(newComp);
+  saveCompMonitor();
+  closeAddCompetitorModal();
+  renderCompMonitor();
+  if (compState.settings.apiKey) scrapeCompetitorById(newComp.id);
+});
+
+/* ── Settings panel ─────────────────────────────────────────── */
+document.getElementById('compSettingsBtn').addEventListener('click', () => {
+  const panel = document.getElementById('compSettingsPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('saveCompSettings').addEventListener('click', () => {
+  compState.settings.apiKey        = document.getElementById('firecrawlApiKey').value.trim();
+  compState.settings.scheduleHours = Number(document.getElementById('scheduleHoursSelect').value);
+  saveCompMonitor();
+  renderCompMonitor();
+  document.getElementById('compSettingsPanel').style.display = 'none';
+});
+
+/* ── Refresh All button ─────────────────────────────────────── */
+document.getElementById('refreshAllBtn').addEventListener('click', refreshAllCompetitors);
