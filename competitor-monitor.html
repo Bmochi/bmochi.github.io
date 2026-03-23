@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Competitor Ad Monitor</title>
+  <link rel="stylesheet" href="competitor-monitor.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="header-title">Competitor Ad Monitor</span>
+      <span class="header-sub">Powered by Firecrawl</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="compSettingsBtn">⚙ Settings</button>
+      <button class="btn btn-secondary btn-sm" id="refreshAllBtn">↻ Refresh All</button>
+      <button class="btn btn-primary" id="addCompetitorBtn">+ Add Competitor</button>
+    </div>
+  </header>
+
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settingsPanel" style="display:none">
+    <div class="settings-inner">
+      <div class="form-group">
+        <label class="form-label">Firecrawl API Key</label>
+        <input type="password" class="form-input" id="firecrawlApiKey" placeholder="fc-…" autocomplete="off" />
+        <span class="form-hint">Get a free key at <a href="https://firecrawl.dev" target="_blank" rel="noopener">firecrawl.dev</a></span>
+      </div>
+      <div class="form-group" style="max-width:220px">
+        <label class="form-label">Auto-refresh Schedule</label>
+        <select class="form-input" id="scheduleHoursSelect">
+          <option value="0">Manual only</option>
+          <option value="12">Every 12 hours</option>
+          <option value="24">Every 24 hours</option>
+          <option value="48">Every 48 hours</option>
+          <option value="168">Weekly</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" id="saveSettings">Save Settings</button>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="statusBar" style="display:none">
+    <span class="status-schedule" id="scheduleInfo"></span>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">🔍</div>
+    <h2 class="empty-title">No competitors yet</h2>
+    <p class="empty-desc">Add a competitor URL and Firecrawl will extract their promotions, pricing, and active campaigns — automatically, on a schedule.</p>
+    <div class="empty-steps">
+      <div class="step"><span class="step-num">1</span><span>Click <strong>⚙ Settings</strong> and paste your Firecrawl API key</span></div>
+      <div class="step"><span class="step-num">2</span><span>Click <strong>+ Add Competitor</strong> and enter a URL to monitor</span></div>
+      <div class="step"><span class="step-num">3</span><span>View the side-by-side comparison table and set a refresh schedule</span></div>
+    </div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="table-wrap" id="tableWrap" style="display:none"></div>
+
+  <!-- Add Competitor Modal -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Add Competitor</h2>
+        <button class="modal-close" id="closeAddModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Competitor Name *</label>
+          <input type="text" class="form-input" id="compName" placeholder="e.g. Ulta Beauty" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL to Monitor *</label>
+          <input type="url" class="form-input" id="compUrl" placeholder="https://competitor.com/promotions" />
+          <span class="form-hint">Pricing page, promotions page, or homepage</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="modal-footer-right">
+          <button class="btn btn-secondary" id="cancelAdd">Cancel</button>
+          <button class="btn btn-primary" id="saveAdd">Add &amp; Scrape</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="competitor-monitor.js"></script>
+</body>
+</html>
