@@ -90,6 +90,14 @@ html, body {
 }
 .header-title { font-size: 1rem; font-weight: 700; letter-spacing: -.2px; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
+.header-nav { display: flex; gap: 4px; }
+.header-nav-link {
+  font-size: .78rem; font-weight: 600; text-decoration: none;
+  padding: 5px 12px; border-radius: 6px; color: var(--text-muted);
+  transition: background .12s, color .12s;
+}
+.header-nav-link:hover  { background: var(--surface); color: var(--text); }
+.header-nav-link.active { background: var(--accent); color: #fff; }
 
 /* View toggle */
 .view-toggle {
